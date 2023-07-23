@@ -123,9 +123,28 @@ app.put('/students/:id', upload.single('profile'), async (req, res) => {
   }
 });
 
+function deleteMultipleFilesSync(filePaths) {
+  // Loop through the array of file paths
+  filePaths.forEach((filePath) => {
+    try {
+      fs.unlinkSync(filePath);
+      console.log(`File deleted successfully: ${filePath}`);
+    } catch (err) {
+      console.error(`Error deleting file: ${filePath}`, err);
+    }
+  });
+}
+
 // DELETE a user by ID
 app.delete('/students/:id', async (req, res) => {
   try {
+    // delete all sub trees
+    console.log('first');
+    let children = await User.find({ parent: req.params.id });
+    children = children.map((el) => el.profile);
+    children.forEach((el) => fs.unlinkSync(`uploads/${el}`));
+    console.log(children);
+    await User.deleteMany({ parent: req.params.id });
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
